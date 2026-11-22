@@ -1,0 +1,9 @@
+# Local secrets and machine-specific config
+profile.env
+pin
+passkeys.json
+
+# Local backups and Python caches
+*.bak*
+__pycache__/
+*.pyc
