@@ -19,8 +19,13 @@ esac
 
 d="$HOME/.local/share/niri-remote"
 put "$here/panel.py" "$d/panel.py" 755
+put "$here/uinput.py" "$d/uinput.py"
+put "$here/auth.py" "$d/auth.py"
+for s in index.html login.html; do
+  put "$here/static/$s" "$d/static/$s"
+done
 for i in icon-192.png icon-512.png; do
-  put "$here/icons/$i" "$d/$i"
+  put "$here/icons/$i" "$d/icons/$i"
 done
 
 cfg="$HOME/.config/niri-remote/profile.env"

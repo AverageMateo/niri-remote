@@ -1,0 +1,658 @@
+<!doctype html>
+<meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>@@TITLE@@</title>
+<link rel=manifest href=/manifest.webmanifest>
+<meta name=theme-color content="#111111">
+<link rel=icon href=/icon-192.png>
+<style>
+*{box-sizing:border-box}
+body{background:#111;color:#ddd;font:15px/1.3 system-ui,-apple-system,sans-serif;margin:8px;padding-bottom:24px}
+h4{margin:14px 4px 5px;color:#889;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+button{background:#2a2d33;color:#ddd;border:0;border-radius:8px;padding:16px 6px;font-size:15px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+button:active,button.act{background:#4a6fa5}
+button.x{background:#8b2a2a}
+button.x:active{background:#b33636}
+button.on{background:#4a6fa5}
+button.sm{padding:11px 6px;font-size:13px}
+#status{background:#1b1d22;border:1px solid #2a2d33;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;user-select:none}
+#status .st-main{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;color:#ccc;flex:1}
+#status .st-sub{font-size:12px;color:#889;white-space:nowrap}
+#winlist{display:none;background:#1b1d22;border-radius:10px;padding:8px;margin-bottom:10px;max-height:240px;overflow-y:auto}
+#winlist button{width:100%;text-align:left;padding:11px 10px;margin-bottom:6px;font-size:13px;display:flex;justify-content:space-between;gap:8px}
+#winlist button:last-child{margin-bottom:0}
+#winlist .wapp{color:#889;font-size:12px;flex-shrink:0}
+.modal{display:none;position:fixed;inset:0;background:#111;flex-direction:column;padding:8px;gap:8px;z-index:9}
+#pad{flex:1;background:#1b1d22;border:1px solid #333;border-radius:12px;touch-action:none;display:flex;align-items:center;justify-content:center;color:#556;font-size:13px;text-align:center;padding:12px;user-select:none;-webkit-user-select:none}
+.row{display:flex;gap:8px}
+.row button{flex:1;padding:18px 0}
+.top button{padding:11px 0}
+.top input{flex:1.4}
+#kb{z-index:10;overflow-y:auto}
+#kb .kb-row{display:flex;gap:6px}
+#kb .kb-row input{flex:1;background:#1b1d22;color:#eee;border:1px solid #333;border-radius:8px;padding:12px;font-size:16px}
+#kb .kb-row button{flex:0 0 auto;padding:12px 16px}
+details{margin-top:16px}
+summary{color:#889;font-size:12px;margin:0 4px 6px;padding:8px 0;cursor:pointer;user-select:none}
+.cfg{background:#1b1d22;border-radius:10px;padding:10px;margin-bottom:12px}
+.cfg h5{margin:10px 2px 6px;color:#889;font-size:12px;font-weight:400}
+.cfg h5:first-child{margin-top:2px}
+.step{display:flex;gap:8px;align-items:center}
+.step button{flex:0 0 24vw;padding:13px 0}
+.step span{flex:1;text-align:center}
+</style>
+<body>
+
+<div id=status title="Tap to switch open windows">
+  <div class=st-main id=st-win>niri remote</div>
+  <div class=st-sub id=st-ws>Windows &#9662;</div>
+</div>
+<div id=winlist></div>
+
+<div class="g g2">
+  <button id=tpopen>Trackpad</button>
+  <button id=kbopen>Keyboard</button>
+</div>
+
+<div id=tp class=modal>
+  <div class="row top">
+    <button id=tpclose class=x>Close</button>
+    <button id=tpdrag>Drag lock</button>
+    <input id=tpsens type=range min=0.5 max=12 step=0.1 value=3 title="Trackpad sensitivity">
+  </div>
+  <div id=pad>
+    1 finger: move &middot; tap: click<br>
+    2 fingers: scroll &middot; 2-finger tap: right click<br>
+    3-finger tap: overview &middot; 3-finger swipe: column / workspace
+  </div>
+  <div class="g g4">
+    <button class=sm data=col-left data-repeat=1>&#9664; Col</button>
+    <button class=sm data=overview>Overview</button>
+    <button class=sm id=tpkb>Keyboard</button>
+    <button class=sm data=col-right data-repeat=1>Col &#9654;</button>
+  </div>
+  <div class=row>
+    <button id=bl>Left</button>
+    <button id=bm>Mid</button>
+    <button id=br>Right</button>
+  </div>
+</div>
+
+<div id=kb class=modal>
+  <div class="row top">
+    <button id=kbclose class=x>Close</button>
+    <button class=kbmod data-mod=ctrl>Ctrl</button>
+    <button class=kbmod data-mod=alt>Alt</button>
+    <button class=kbmod data-mod=super>Super</button>
+    <button class=kbmod data-mod=shift>Shift</button>
+  </div>
+  <div class=kb-row>
+    <input id=kbtxt type=text placeholder="Type or paste text to send..." autocomplete=off>
+    <button id=kbsend class=on>Send</button>
+  </div>
+  <h4>Special Keys</h4>
+  <div class="g g4">
+    <button class=kkey data-key=esc>Esc</button>
+    <button class=kkey data-key=tab>Tab</button>
+    <button class=kkey data-key=backspace data-repeat=1>&#9003; Bksp</button>
+    <button class=kkey data-key=enter>Enter</button>
+    <button class=kkey data-key=space>Space</button>
+    <button class=kkey data-key=delete>Del</button>
+    <button class=kkey data-key=home>Home</button>
+    <button class=kkey data-key=end>End</button>
+  </div>
+  <h4>Arrows &amp; Page</h4>
+  <div class="g g3">
+    <button class=kkey data-key=pgup>PgUp</button>
+    <button class=kkey data-key=up data-repeat=1>&#9650;</button>
+    <button class=kkey data-key=pgdn>PgDn</button>
+    <button class=kkey data-key=left data-repeat=1>&#9664;</button>
+    <button class=kkey data-key=down data-repeat=1>&#9660;</button>
+    <button class=kkey data-key=right data-repeat=1>&#9654;</button>
+  </div>
+  <h4>Shortcuts</h4>
+  <div class="g g4">
+    <button class=kcombo data-mods=ctrl data-key=c>Ctrl+C</button>
+    <button class=kcombo data-mods=ctrl data-key=v>Ctrl+V</button>
+    <button class=kcombo data-mods=ctrl data-key=z>Ctrl+Z</button>
+    <button class=kcombo data-mods=ctrl data-key=a>Ctrl+A</button>
+    <button class=kcombo data-mods=ctrl data-key=t>Ctrl+T</button>
+    <button class=kcombo data-mods=ctrl data-key=w>Ctrl+W</button>
+    <button class=kcombo data-mods=ctrl data-key=r>Ctrl+R</button>
+    <button class=kcombo data-mods=ctrl data-key=f>Ctrl+F</button>
+  </div>
+</div>
+
+<h4>Apps &amp; System</h4>
+<div class=g>
+  <button data=launcher>Launcher</button>
+  <button data=terminal>Terminal</button>
+  <button data=overview>Overview</button>
+</div>
+
+<h4>Focus</h4>
+<div class="g g2">
+  <button data=col-left data-repeat=1>&#9664; Column</button>
+  <button data=col-right data-repeat=1>Column &#9654;</button>
+  <button data=win-up data-repeat=1>&#9650; Window</button>
+  <button data=win-down data-repeat=1>Window &#9660;</button>
+  <button data=ws-up data-repeat=1>&#9650; Workspace</button>
+  <button data=ws-down data-repeat=1>Workspace &#9660;</button>
+</div>
+<div class=g style="margin-top:8px">
+  <button class=sm data=col-first>&#9198; First col</button>
+  <button class=sm data=mon-next>Next screen</button>
+  <button class=sm data=col-last>Last col &#9197;</button>
+</div>
+
+<h4>Column &amp; Window</h4>
+<div class=g>
+  <button data=width-cycle>Width</button>
+  <button data=center>Center</button>
+  <button data=tabbed>Tabbed</button>
+  <button data=maximize>Maximize</button>
+  <button data=fullscreen>Fullscreen</button>
+  <button data=float>Float</button>
+</div>
+<div class="g g2" style="margin-top:8px">
+  <button class=sm data=expand>Expand width</button>
+  <button class="sm x" data=close>Close window</button>
+</div>
+
+<h4>Move Window / Column</h4>
+<div class="g g2">
+  <button data=mv-col-left>&#9664; Column</button>
+  <button data=mv-col-right>Column &#9654;</button>
+  <button data=mv-win-up>&#9650; In column</button>
+  <button data=mv-win-down>In column &#9660;</button>
+  <button data=mv-ws-up>&#9650; To workspace</button>
+  <button data=mv-ws-down>To workspace &#9660;</button>
+  <button data=expel-left>&#9664; Join/split</button>
+  <button data=expel-right>Join/split &#9654;</button>
+</div>
+<div class=g style="margin-top:8px;grid-template-columns:1fr">
+  <button class=sm data=mv-mon-next>Move column to next screen</button>
+</div>
+
+<h4>Workspaces</h4>
+<div class=g id=wsg></div>
+
+<h4>Media &amp; Screen</h4>
+<div class=g>
+  <button data=vol-down data-repeat=1>Vol &minus;</button>
+  <button data=vol-mute>Mute</button>
+  <button data=vol-up data-repeat=1>Vol +</button>
+  <button data=media-prev>&#9198; Prev</button>
+  <button data=media-play>&#9199; Play</button>
+  <button data=media-next>Next &#9197;</button>
+</div>
+<div class="g g2" style="margin-top:8px">
+  <button class=sm data=screenshot>Screenshot</button>
+  <button class=sm data=power-off>Monitors off</button>
+</div>
+
+<details>
+  <summary>CONFIGURATION</summary>
+  <div class=cfg>
+    <h5>Minimum workspace buttons</h5>
+    <div class=step>
+      <button id=wsminus>&minus;</button>
+      <span id=wsn></span>
+      <button id=wsplus>+</button>
+    </div>
+    @@SCALE@@
+    @@LOCKBTN@@
+  </div>
+</details>
+
+<script>
+(()=>{
+  const $=id=>document.getElementById(id);
+  const vib=(ms=12)=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(_){}};
+
+  // 1. Auth wrapper for fetch
+  const origFetch=window.fetch.bind(window);
+  window.fetch=async(...a)=>{
+    const r=await origFetch(...a);
+    if(r.status===401)location.reload();
+    return r;
+  };
+
+  const lb=$('lockbtn');
+  if(lb)lb.onclick=async()=>{await fetch('/logout',{method:'POST'});location.reload()};
+
+  // 2. Live Niri state & workspaces
+  let minWs=5;
+  try{minWs=Math.min(9,Math.max(1,+localStorage.wsn||5))}catch(_){}
+  let liveState=null;
+
+  function renderWorkspaces(){
+    $('wsn').textContent=minWs;
+    const g=$('wsg');
+    g.innerHTML='';
+    const liveWs=(liveState&&liveState.workspaces)||[];
+    const focOut=(liveWs.find(w=>w.is_focused)||{}).output;
+    const outWs=focOut?liveWs.filter(w=>w.output===focOut):liveWs;
+    const maxIdx=outWs.reduce((m,w)=>Math.max(m,w.idx||0),0);
+    const count=Math.min(9,Math.max(minWs,maxIdx));
+    const focusedIdx=(outWs.find(w=>w.is_focused)||{}).idx;
+    g.style.gridTemplateColumns='repeat('+(count<=5?count:count===6||count===9?3:4)+',1fr)';
+    for(let i=1;i<=count;i++){
+      const b=document.createElement('button');
+      const wObj=outWs.find(w=>w.idx===i);
+      b.textContent=wObj&&wObj.name?`${i}: ${wObj.name}`:i;
+      if(focusedIdx===i)b.classList.add('on');
+      b.onclick=()=>{vib(12);doAction('ws-'+i)};
+      g.appendChild(b);
+    }
+  }
+
+  function renderStatus(){
+    if(!liveState)return;
+    const fw=liveState.focused_window;
+    $('st-win').textContent=fw?(fw.title||fw.app_id||'Window'):'No focused window';
+    const wins=liveState.windows||[];
+    $('st-ws').textContent=`${wins.length} win \u25be`;
+    const wl=$('winlist');
+    wl.innerHTML='';
+    if(!wins.length){
+      const d=document.createElement('div');
+      d.style.cssText='color:#778;font-size:13px;padding:6px';
+      d.textContent='No open windows';
+      wl.appendChild(d);
+      return;
+    }
+    for(const w of wins){
+      const b=document.createElement('button');
+      if(w.is_focused)b.classList.add('on');
+      const t=document.createElement('span');
+      t.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      t.textContent=w.title||w.app_id||`Window #${w.id}`;
+      const a=document.createElement('span');
+      a.className='wapp';
+      a.textContent=w.app_id||'';
+      b.append(t,a);
+      b.onclick=async()=>{
+        vib(12);
+        await fetch('/focus-window/'+w.id,{method:'POST'});
+        wl.style.display='none';
+        setTimeout(refreshState,120);
+      };
+      wl.appendChild(b);
+    }
+  }
+
+  async function refreshState(){
+    try{
+      const r=await fetch('/state');
+      if(r.ok){
+        liveState=await r.json();
+        renderStatus();
+        renderWorkspaces();
+      }
+    }catch(_){}
+  }
+
+  $('status').onclick=()=>{
+    const wl=$('winlist');
+    const open=wl.style.display==='block';
+    wl.style.display=open?'none':'block';
+    if(!open)refreshState();
+  };
+
+  function setMinWs(v){
+    minWs=Math.min(9,Math.max(1,v));
+    try{localStorage.wsn=minWs}catch(_){}
+    renderWorkspaces();
+  }
+  $('wsminus').onclick=()=>setMinWs(minWs-1);
+  $('wsplus').onclick=()=>setMinWs(minWs+1);
+  renderWorkspaces();
+  refreshState();
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshState()});
+
+  // 3. Action dispatcher + press-and-hold repeat
+  let stateTimer=null;
+  function doAction(name){
+    fetch('/do/'+name,{method:'POST'}).then(()=>{
+      clearTimeout(stateTimer);
+      stateTimer=setTimeout(refreshState,150);
+    }).catch(()=>{});
+  }
+
+  function bindRepeatable(el,fn){
+    let t1=null,t2=null,touched=false;
+    const stop=()=>{clearTimeout(t1);clearInterval(t2);t1=t2=null;el.classList.remove('act')};
+    const start=e=>{
+      if(e.type==='mousedown'&&touched)return;
+      if(e.type==='touchstart'){touched=true;e.preventDefault()}
+      stop();
+      el.classList.add('act');
+      vib(12);
+      fn();
+      if(el.hasAttribute('data-repeat')){
+        t1=setTimeout(()=>{t2=setInterval(()=>{vib(6);fn()},110)},350);
+      }
+    };
+    el.addEventListener('touchstart',start,{passive:false});
+    el.addEventListener('touchend',stop);
+    el.addEventListener('touchcancel',stop);
+    el.addEventListener('mousedown',start);
+    el.addEventListener('mouseup',stop);
+    el.addEventListener('mouseleave',stop);
+  }
+
+  document.querySelectorAll('button[data]').forEach(b=>{
+    bindRepeatable(b,()=>doAction(b.getAttribute('data')));
+  });
+
+  // 4. WebSocket connection (shared by Trackpad & Keyboard)
+  const tp=$('tp'),pad=$('pad'),kb=$('kb');
+  let wl=null,ws=null,q=[];
+  function conn(){
+    if(ws&&(ws.readyState===0||ws.readyState===1))return;
+    ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
+    ws.onopen=()=>{q.forEach(m=>ws.send(m));q=[]};
+    ws.onclose=()=>{
+      ws=null;
+      fetch('/auth').then(r=>{
+        if(r.ok)setTimeout(()=>{
+          if(tp.style.display==='flex'||kb.style.display==='flex')conn();
+        },500);
+      }).catch(()=>{});
+    };
+  }
+  function postInput(o){
+    const m=JSON.stringify(o);
+    if(ws&&ws.readyState===1)ws.send(m);
+    else{
+      conn();
+      if(o.btn||o.key||o.text)q.push(m);
+    }
+  }
+
+  // 5. Trackpad with rAF batching + 3-finger niri gestures
+  let sens=+(localStorage.tpsens||3);
+  $('tpsens').value=sens;
+  $('tpsens').oninput=e=>{sens=+e.target.value;try{localStorage.tpsens=sens}catch(_){}};
+
+  let acc={dx:0,dy:0,sx:0,sy:0},rafId=0;
+  function flush(){
+    rafId=0;
+    const a=acc;
+    if(!(a.dx||a.dy||a.sx||a.sy))return;
+    acc={dx:0,dy:0,sx:0,sy:0};
+    postInput(a);
+  }
+  function scheduleFlush(){if(!rafId)rafId=requestAnimationFrame(flush)}
+  function btn(b,d){postInput({btn:b,down:d})}
+  function click(b){btn(b,1);setTimeout(()=>btn(b,0),30);vib(10)}
+
+  $('tpopen').onclick=async()=>{
+    tp.style.display='flex';
+    conn();
+    try{await tp.requestFullscreen()}catch(_){}
+    try{wl=await navigator.wakeLock.request('screen')}catch(_){}
+  };
+  $('tpclose').onclick=()=>{
+    if(drag)$('tpdrag').click();
+    tp.style.display='none';
+    try{if(document.fullscreenElement)document.exitFullscreen()}catch(_){}
+    try{wl&&wl.release();wl=null}catch(_){}
+    refreshState();
+  };
+
+  let drag=false;
+  $('tpdrag').onclick=e=>{drag=!drag;e.target.classList.toggle('on',drag);btn('l',drag?1:0)};
+  for(const [id,b] of [['bl','l'],['bm','m'],['br','r']]){
+    const el=$(id);
+    el.ontouchstart=e=>{e.preventDefault();btn(b,1);el.classList.add('on')};
+    el.ontouchend=el.ontouchcancel=e=>{e.preventDefault();btn(b,0);el.classList.remove('on')};
+  }
+
+  let t0=0,moved=0,maxN=0,last=null,rem={x:0,y:0},g3={x:0,y:0,fired:false};
+  const pt=e=>{
+    const t=[...e.touches];
+    return {n:t.length,x:t.reduce((s,a)=>s+a.clientX,0)/t.length,y:t.reduce((s,a)=>s+a.clientY,0)/t.length};
+  };
+  pad.ontouchstart=e=>{
+    e.preventDefault();
+    const p=pt(e);
+    if(e.touches.length===1){t0=Date.now();moved=0;maxN=1;g3={x:0,y:0,fired:false}}
+    maxN=Math.max(maxN,p.n);
+    last=p;
+  };
+  pad.ontouchmove=e=>{
+    e.preventDefault();
+    const p=pt(e);
+    if(!last||p.n!==last.n){last=p;return}
+    const dx=p.x-last.x,dy=p.y-last.y;
+    moved+=Math.abs(dx)+Math.abs(dy);
+    last=p;
+    if(p.n===1){
+      const g=sens*(1+Math.min(Math.hypot(dx,dy),40)/20);
+      rem.x+=dx*g;rem.y+=dy*g;
+      const ix=Math.trunc(rem.x),iy=Math.trunc(rem.y);
+      rem.x-=ix;rem.y-=iy;
+      acc.dx+=ix;acc.dy+=iy;
+      scheduleFlush();
+    }else if(p.n===2){
+      rem.x+=dx/12;rem.y+=dy/12;
+      const ix=Math.trunc(rem.x),iy=Math.trunc(rem.y);
+      rem.x-=ix;rem.y-=iy;
+      acc.sx+=ix;acc.sy-=iy;
+      scheduleFlush();
+    }else if(p.n>=3&&!g3.fired){
+      g3.x+=dx;g3.y+=dy;
+      if(Math.abs(g3.x)>55||Math.abs(g3.y)>55){
+        g3.fired=true;
+        vib(18);
+        if(Math.abs(g3.x)>Math.abs(g3.y)){
+          doAction(g3.x>0?'col-left':'col-right');
+        }else{
+          doAction(g3.y>0?'ws-up':'ws-down');
+        }
+      }
+    }
+  };
+  pad.ontouchend=pad.ontouchcancel=e=>{
+    e.preventDefault();
+    if(e.touches.length===0){
+      if(Date.now()-t0<240&&moved<12){
+        if(maxN>=3){vib(15);doAction('overview')}
+        else click(maxN===2?'r':'l');
+      }
+      last=null;
+    }else last=pt(e);
+  };
+
+  // 6. Remote Keyboard
+  let activeMods=new Set();
+  const modBtns=[...document.querySelectorAll('.kbmod')];
+  function syncModUI(){
+    modBtns.forEach(b=>b.classList.toggle('on',activeMods.has(b.dataset.mod)));
+  }
+  modBtns.forEach(b=>{
+    b.onclick=()=>{
+      const m=b.dataset.mod;
+      if(activeMods.has(m))activeMods.delete(m);else activeMods.add(m);
+      vib(10);
+      syncModUI();
+    };
+  });
+
+  function sendKey(key,extraMods=null){
+    const mods=extraMods||[...activeMods];
+    postInput({key,mods});
+    if(!extraMods&&activeMods.size){
+      activeMods.clear();
+      syncModUI();
+    }
+  }
+
+  document.querySelectorAll('.kkey').forEach(b=>{
+    bindRepeatable(b,()=>sendKey(b.dataset.key));
+  });
+  document.querySelectorAll('.kcombo').forEach(b=>{
+    b.onclick=()=>{
+      vib(12);
+      sendKey(b.dataset.key,b.dataset.mods.split(','));
+    };
+  });
+
+  function sendText(){
+    const inp=$('kbtxt');
+    const v=inp.value;
+    if(!v)return;
+    vib(12);
+    postInput({text:v});
+    inp.value='';
+    inp.focus();
+  }
+  $('kbsend').onclick=sendText;
+  $('kbtxt').onkeydown=e=>{
+    if(e.key==='Enter'){
+      e.preventDefault();
+      if($('kbtxt').value)sendText();
+      else sendKey('enter');
+    }else if(e.key==='Backspace'&&!$('kbtxt').value){
+      e.preventDefault();
+      sendKey('backspace');
+    }
+  };
+
+  function openKb(){
+    kb.style.display='flex';
+    conn();
+    setTimeout(()=>$('kbtxt').focus(),50);
+  }
+  $('kbopen').onclick=openKb;
+  $('tpkb').onclick=openKb;
+  $('kbclose').onclick=()=>{kb.style.display='none'};
+
+  // 7. Screen Scale (Multi-monitor aware)
+  const scg=$('scg');
+  if(scg){
+    let cur=1,curOut=null,outputs=[];
+    const P=[1,1.25,1.5,1.75,2,2.5,3];
+    const scout=$('scout');
+    function showScale(){
+      $('scl').textContent=curOut?`(${curOut}: ${cur})`:`(${cur})`;
+      if(outputs.length>1){
+        scout.style.display='grid';
+        scout.style.gridTemplateColumns=`repeat(${Math.min(3,outputs.length)},1fr)`;
+        scout.innerHTML='';
+        for(const o of outputs){
+          const b=document.createElement('button');
+          b.className='sm'+(o.name===curOut?' on':'');
+          b.textContent=`${o.name} (${o.scale})`;
+          b.onclick=()=>loadScale(o.name);
+          scout.appendChild(b);
+        }
+      }else{
+        scout.style.display='none';
+      }
+      scg.innerHTML='';
+      scg.style.gridTemplateColumns='repeat(4,1fr)';
+      for(const v of P){
+        const b=document.createElement('button');
+        b.textContent=v;
+        if(Math.abs(v-cur)<0.01)b.className='on';
+        b.onclick=()=>setScale(v);
+        scg.appendChild(b);
+      }
+    }
+    async function loadScale(outName){
+      try{
+        const q=outName?`?output=${encodeURIComponent(outName)}`:'';
+        const r=await fetch('/scale'+q);
+        if(r.ok){
+          const j=await r.json();
+          cur=j.scale;curOut=j.output;outputs=j.outputs||[];
+          showScale();
+        }
+      }catch(_){}
+    }
+    async function setScale(v){
+      v=Math.round(Math.min(4,Math.max(0.5,v))*100)/100;
+      try{
+        const q=curOut?`?output=${encodeURIComponent(curOut)}`:'';
+        const r=await fetch('/scale/'+v+q,{method:'POST'});
+        if(r.ok){
+          const j=await r.json();
+          cur=j.scale;curOut=j.output;outputs=j.outputs||[];
+        }
+      }catch(_){}
+      showScale();
+    }
+    $('scminus').onclick=()=>setScale(cur-0.25);
+    $('scplus').onclick=()=>setScale(cur+0.25);
+    document.querySelector('details').ontoggle=e=>{if(e.target.open)loadScale(curOut)};
+    showScale();
+  }
+
+  // 8. WebAuthn Passkey management
+  const box=$('fp');
+  if(box){
+    const msg=$('fpm');
+    const b2u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    const u2b=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+    const dev=()=>/Android/.test(navigator.userAgent)?'Android':/iPhone|iPad/.test(navigator.userAgent)?'iOS':/Linux/.test(navigator.userAgent)?'Linux':'Device';
+    async function loadPasskeys(){
+      const j=await (await fetch('/webauthn/list')).json();
+      box.innerHTML='';
+      for(const it of j.items){
+        const r=document.createElement('div');
+        r.className='step';
+        r.style.marginBottom='8px';
+        const sp=document.createElement('span');
+        sp.textContent=it.name+' ('+new Date(it.created*1000).toLocaleDateString()+')';
+        const b=document.createElement('button');
+        b.textContent='Remove';
+        b.className='x';
+        b.onclick=async()=>{
+          await fetch('/webauthn/remove',{method:'POST',body:JSON.stringify({id:it.id})});
+          loadPasskeys();
+        };
+        r.append(sp,b);
+        box.appendChild(r);
+      }
+      const a=document.createElement('button');
+      a.textContent='Add this device';
+      a.style.width='100%';
+      a.onclick=addPasskey;
+      box.appendChild(a);
+    }
+    async function addPasskey(){
+      msg.textContent='';
+      try{
+        const o=await (await fetch('/webauthn/reg/begin',{method:'POST'})).json();
+        const c=await navigator.credentials.create({publicKey:{
+          challenge:u2b(o.challenge),rp:o.rp,
+          user:{id:u2b(o.user.id),name:o.user.name,displayName:o.user.displayName},
+          pubKeyCredParams:o.pubKeyCredParams,authenticatorSelection:o.authenticatorSelection,
+          timeout:o.timeout,attestation:'none',
+          excludeCredentials:o.excludeCredentials.map(x=>({type:'public-key',id:u2b(x.id)}))
+        }});
+        const r=await fetch('/webauthn/reg/finish',{
+          method:'POST',
+          body:JSON.stringify({
+            id:c.id,name:dev(),
+            response:{clientDataJSON:b2u(c.response.clientDataJSON),attestationObject:b2u(c.response.attestationObject)}
+          })
+        });
+        msg.textContent=r.ok?'Added. Next time you open the panel it asks for your fingerprint.':'The server rejected it';
+        loadPasskeys();
+      }catch(e){
+        msg.textContent='Could not add: '+(e.name||e);
+      }
+    }
+    if(window.PublicKeyCredential)loadPasskeys();
+    else box.textContent='This browser does not support fingerprint unlock here (needs HTTPS).';
+  }
+})();
+</script>
+</body>
+

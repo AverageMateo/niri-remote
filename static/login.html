@@ -1,0 +1,79 @@
+<!doctype html>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>@@TITLE@@</title>
+<link rel=manifest href=/manifest.webmanifest>
+<meta name=theme-color content="#111111">
+<link rel=icon href=/icon-192.png>
+<style>
+body{background:#111;color:#ddd;font:16px system-ui,-apple-system,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.b{width:min(320px,86vw);text-align:center}
+h3{font-weight:400;margin:0 0 18px;color:#889}
+input{width:100%;box-sizing:border-box;background:#2a2d33;color:#ddd;border:0;border-radius:8px;padding:16px;font-size:28px;text-align:center;letter-spacing:.5em}
+#m{height:22px;margin-top:14px;color:#c66;font-size:14px}
+button{margin-top:10px;background:#2a2d33;color:#ddd;border:0;border-radius:8px;padding:14px 22px;font-size:16px;touch-action:manipulation;cursor:pointer}
+</style>
+<body>
+<div class=b>
+  <h3>@@TITLE@@</h3>
+  <input id=p type=password inputmode=numeric pattern="[0-9]*" maxlength=6 autocomplete=off>
+  <div id=m></div>
+  <button id=fb hidden>Use fingerprint</button>
+</div>
+<script>
+const p=document.getElementById('p'),m=document.getElementById('m');
+let t=null;
+function lock(s){
+  p.disabled=true;p.value='';clearInterval(t);
+  const end=Date.now()+s*1000;
+  const tick=()=>{
+    const r=Math.max(0,Math.round((end-Date.now())/1000));
+    if(!r){clearInterval(t);p.disabled=false;m.textContent='';p.focus();return}
+    const h=Math.floor(r/3600),mi=Math.floor(r%3600/60),se=r%60;
+    m.textContent='Locked. Try again in '+(h?h+'h ':'')+(mi||h?mi+'m ':'')+se+'s';
+  };
+  tick();t=setInterval(tick,1000);
+}
+async function go(){
+  const r=await fetch('/login',{method:'POST',body:JSON.stringify({pin:p.value})});
+  let j={};try{j=await r.json()}catch(_){}
+  if(r.ok){location.reload()}
+  else if(r.status===429){lock(j.locked||60)}
+  else{
+    m.textContent='Wrong PIN, '+(j.left??'?')+' tries left';
+    p.value='';
+    navigator.vibrate&&navigator.vibrate(60);
+  }
+}
+p.oninput=()=>{m.textContent='';if(p.value.length===6)go()};
+const L=@@LOCK@@;if(L>0)lock(L);
+const WA=@@WA@@;
+const b2u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const u2b=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+async function bio(o){
+  try{
+    if(!o){const r=await fetch('/webauthn/auth/begin',{method:'POST'});if(!r.ok)throw 0;o=await r.json()}
+    const c=await navigator.credentials.get({publicKey:{
+      challenge:u2b(o.challenge),rpId:o.rpId,timeout:o.timeout,userVerification:'required',
+      allowCredentials:o.allowCredentials.map(x=>({type:'public-key',id:u2b(x.id)}))
+    }});
+    const q=c.response;
+    const r=await fetch('/webauthn/auth/finish',{
+      method:'POST',
+      body:JSON.stringify({
+        id:c.id,
+        response:{clientDataJSON:b2u(q.clientDataJSON),authenticatorData:b2u(q.authenticatorData),signature:b2u(q.signature)}
+      })
+    });
+    if(r.ok){location.reload();return}
+    m.textContent='Fingerprint not accepted';
+  }catch(e){
+    m.textContent='Fingerprint cancelled. Use the PIN or the button below';
+  }
+  if(!p.disabled)p.focus();
+}
+const fb=document.getElementById('fb');
+if(WA&&window.PublicKeyCredential){fb.hidden=false;fb.onclick=()=>bio(null);bio(WA)}
+else if(L<=0)p.focus();
+</script>
+</body>
+
